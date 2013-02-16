@@ -36,7 +36,7 @@ public class MetaClassTemplateHelper {
 		if (project != null) {
 			MetaConfiguration configuration = getCurrentConfiguration(project);
 			if (configuration != null) {
-				template = configuration.getMetaTemplate(publicId, axis);
+				template = configuration.getMetaTemplate(publicId.trim().replaceAll("\\s+", " "), axis);
 			}
 		}
 		return template;

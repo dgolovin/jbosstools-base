@@ -56,6 +56,18 @@ public class TextProposal {
 
 	PostProcessing postProcessing;
 
+	public TextProposal(ImageDescriptor image, String label, String replacementStr, int position,
+			String contextInfo) {
+		this.label = label;
+		this.replacementString = replacementStr;
+		this.imageDescriptor = image;
+		this.position = position;
+		this.contextInfo = contextInfo;
+	}
+
+	public TextProposal() {
+	}
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#clone()
 	 */
@@ -374,23 +386,7 @@ public class TextProposal {
 
     private static class TextProposalComparator implements Comparator<TextProposal> {
 		public int compare(TextProposal p1, TextProposal p2) {
-			int n1=p1.replacementString.length(), n2=p2.replacementString.length();
-			for (int i1=0, i2=0; i1<n1 && i2<n2; i1++, i2++) {
-				char c1 = p1.replacementString.charAt(i1);
-				char c2 = p2.replacementString.charAt(i2);
-				if (c1 != c2) {
-					c1 = Character.toUpperCase(c1);
-					c2 = Character.toUpperCase(c2);
-					if (c1 != c2) {
-					   c1 = Character.toLowerCase(c1);
-					   c2 = Character.toLowerCase(c2);
-					   if (c1 != c2) {
-					       return c1 - c2;
-					   }
-					}
-				}
-			}
-			return n1 - n2;
+			return p1.getReplacementString().compareTo(p2.getReplacementString());
 		}
 	}
 }

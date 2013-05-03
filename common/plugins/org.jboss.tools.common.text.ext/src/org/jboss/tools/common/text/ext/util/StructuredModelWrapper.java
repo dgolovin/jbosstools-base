@@ -36,13 +36,13 @@ public class StructuredModelWrapper {
 	 * 
 	 * @see StructuredModelWrapper.execute(IFile file, final Command command)  
 	 */
-	public interface ICommand {
+	public interface ICommand<T> {
 		/**
 		 * Execute code related to <code>xmlDocument instance<code>.
 		 * @param xmlDocument - document for file passed to <code>StructuredModelWrapper.execute</code>
 		 *        method. It is never called with null value.
 		 */
-		void execute(IDOMDocument xmlDocument);
+		T execute(IDOMDocument xmlDocument);
 		
 	}
 
@@ -107,16 +107,12 @@ public class StructuredModelWrapper {
 	 * @param file - file to get IDOMDocument instance for 
 	 * @param command - command to execute
 	 */
-	public static void execute(IFile file, final ICommand command) {
+	public static <S> S execute(IFile file, final ICommand<S> command) {
 		IStructuredModel model = null;
+		S result = null;
 		try {
 			model = StructuredModelManager.getModelManager().getModelForRead(file);
-			if(model instanceof IDOMModel) {
-				final IDOMDocument xmlDocument = ((IDOMModel) model).getDocument();
-				if(xmlDocument != null) {
-					command.execute(xmlDocument);
-				}
-			}
+			result = internalExecute(command, model, result);
 		} catch (IOException e) {
 			ExtensionsPlugin.getDefault().logError(e);
 		} catch (CoreException e) {
@@ -126,5 +122,64 @@ public class StructuredModelWrapper {
 				model.releaseFromRead();
 			}
 		}
+		return result;
+	}
+	
+	public static <S> S execute(IDocument document, final ICommand<S> command) {
+		IStructuredModel model = null;
+		S result = null;
+		try {
+			model = StructuredModelManager.getModelManager().getExistingModelForRead(document);
+			result = internalExecute(command, model, result);
+		} finally {
+			if (model != null) {
+				model.releaseFromRead();
+			}
+		}
+		return result;
+	}
+
+	private static <S> S internalExecute(final ICommand<S> command,
+			IStructuredModel model, S result) {
+		if(model instanceof IDOMModel) {
+			final IDOMDocument xmlDocument = ((IDOMModel) model).getDocument();
+			if(xmlDocument != null) {
+				result = command.execute(xmlDocument);
+			}
+		}
+		return result;
+	}
+
+	public static String getBaseLocation(IDocument document) {
+		return execute(document,new ICommand<String>() {@Override
+		public String execute(IDOMDocument xmlDocument) {
+			String result = null;
+			if(xmlDocument instanceof IStructuredModel) {
+				result = AbstractHyperlink.getBaseLocation((IStructuredModel)xmlDocument);
+			}
+			return result;
+		}});
+	}
+
+	public static IFile getFile(IDocument document) {
+		return execute(document,new ICommand<IFile>() {@Override
+			public IFile execute(IDOMDocument xmlDocument) {
+				IFile result = null;
+				if(xmlDocument instanceof IStructuredModel) {
+					result = AbstractHyperlink.getFile((IStructuredModel)xmlDocument);
+				}
+				return result;
+			}});
+	}
+
+	public static XModel getXModel(IDocument document) {
+		return execute(document,new ICommand<XModel>() {@Override
+			public XModel execute(IDOMDocument xmlDocument) {
+				XModel result = null;
+				if(xmlDocument instanceof IStructuredModel) {
+					result = AbstractHyperlink.getXModel((IStructuredModel)xmlDocument);
+				}
+				return result;
+			}});
 	}
 }

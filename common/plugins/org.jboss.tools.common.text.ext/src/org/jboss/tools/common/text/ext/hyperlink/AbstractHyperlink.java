@@ -66,33 +66,15 @@ abstract public class AbstractHyperlink extends AbstractBaseHyperlink implements
 	}
 
 	protected IFile getFile() {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(getDocument());
-			return smw.getFile();
-		} finally {
-			smw.dispose();
-		}
+		return StructuredModelWrapper.getFile(getDocument());
 	}
 	
 	protected String getBaseLocation() {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(getDocument());
-			return smw.getBaseLocation();
-		} finally {
-			smw.dispose();
-		}
+		return StructuredModelWrapper.getBaseLocation(getDocument());
 	}
 	
 	protected XModel getXModel() {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(getDocument());
-			return smw.getXModel();
-		} finally {
-			smw.dispose();
-		}
+		return StructuredModelWrapper.getXModel(getDocument());
 	}
 
 	public static XModel getXModel(IStructuredModel structuredModel) {

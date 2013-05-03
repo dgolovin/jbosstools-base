@@ -61,11 +61,19 @@ abstract public class JumpToHyperlink extends AbstractHyperlink {
 
 	abstract protected String getDestinationAxis();
 	
-	protected Region getRegionHolder(final String content, final IRegion region) {
-		return StructuredModelWrapper.execute(getDocument(),new ICommand<Region>(){
+	protected NodeList getRootElementsToSearch (IRegion region) {
+		return StructuredModelWrapper.execute(getDocument(), new ICommand<NodeList>(){
 			@Override
-			public Region execute(IDOMDocument xmlDocument) {
-				List elements = findElementsByAxis(xmlDocument.getChildNodes(), getDestinationAxis());
+			public NodeList execute(IDOMDocument xmlDocument) {
+				return xmlDocument.getChildNodes();
+			}});
+	}
+
+	protected RegionHolder getRegionHolder(final String content, final IRegion region) {
+		return StructuredModelWrapper.execute(getDocument(),new ICommand<RegionHolder>(){
+			@Override
+			public RegionHolder execute(IDOMDocument xmlDocument) {
+				List elements = findElementsByAxis(getRootElementsToSearch(region), getDestinationAxis());
 				
 				if (elements == null || elements.size() == 0) return null;
 				
@@ -74,8 +82,8 @@ abstract public class JumpToHyperlink extends AbstractHyperlink {
 						IDOMElement element = (IDOMElement)elements.get(i);
 						String text = Utils.trimQuotes(getElementText(element));
 						if (content.equals(text)) {
-							return new Region (element.getStartOffset(), 
-									element.getStartStructuredDocumentRegion().getLength());
+							return new RegionHolder(new Region (element.getStartOffset(), 
+									element.getStartStructuredDocumentRegion().getLength()));
 						}
 					}
 				}

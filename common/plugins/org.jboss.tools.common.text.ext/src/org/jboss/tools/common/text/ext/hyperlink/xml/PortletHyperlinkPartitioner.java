@@ -31,19 +31,7 @@ public class PortletHyperlinkPartitioner extends AbstractHyperlinkPartitioner {
 	static final String portletResourceBundleNodeName = "resource-bundle"; //$NON-NLS-1$
 
 	public static Node getNode(IDocument document, int superOffset) {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(document);
-			Document xmlDocument = smw.getDocument();
-			if (xmlDocument == null)
-				return null;
-
-			Node node = Utils.findNodeForOffset(xmlDocument, superOffset); // #text
-
-			return node;
-		} finally {
-			smw.dispose();
-		}
+		return StructuredModelWrapper.getNode(document,superOffset);
 	}
 
 	public static String getType(Node node) {

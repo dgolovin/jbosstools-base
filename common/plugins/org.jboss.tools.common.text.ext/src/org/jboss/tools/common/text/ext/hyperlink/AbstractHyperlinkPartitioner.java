@@ -14,10 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
-import org.eclipse.wst.sse.core.internal.provisional.StructuredModelManager;
 import org.eclipse.wst.sse.ui.internal.util.Sorter;
+import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
 import org.jboss.tools.common.text.ext.util.StructuredModelWrapper;
+import org.jboss.tools.common.text.ext.util.StructuredModelWrapper.ICommand;
 import org.jboss.tools.common.text.ext.util.Utils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -112,20 +114,17 @@ public abstract class AbstractHyperlinkPartitioner implements IHyperlinkPartitio
 
     protected abstract IHyperlinkRegion parse(IDocument document, int offset, IHyperlinkRegion superRegion);
 
-	protected String getAxis(IDocument document, int offset) {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(document);
-			Document xmlDocument = smw.getDocument();
-			if (xmlDocument == null) return null;
-			Node node = Utils.findNodeForOffset(xmlDocument, offset);
-			if (node instanceof Attr) {
-				Attr attr = (Attr)node;
-				return Utils.getParentAxisForNode(xmlDocument, attr) + attr.getName() + "/"; //$NON-NLS-1$
+	protected String getAxis(IDocument document, final int offset) {
+		return StructuredModelWrapper.execute(document,new ICommand<String>(){
+			@Override
+			public String execute(IDOMDocument xmlDocument) {
+				Node node = Utils.findNodeForOffset(xmlDocument, offset);
+				if (node instanceof Attr) {
+					Attr attr = (Attr)node;
+					return Utils.getParentAxisForNode(xmlDocument, attr) + attr.getName() + "/"; //$NON-NLS-1$
+				}
+				return Utils.getParentAxisForNode(xmlDocument, node);
 			}
-			return Utils.getParentAxisForNode(xmlDocument, node);
-		} finally {
-			smw.dispose();
-		}
+		});
 	}
 }

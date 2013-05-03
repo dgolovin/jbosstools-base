@@ -27,6 +27,7 @@ import org.jboss.tools.common.model.XModel;
 import org.jboss.tools.common.text.ext.ExtensionsPlugin;
 import org.jboss.tools.common.text.ext.hyperlink.AbstractHyperlink;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 public class StructuredModelWrapper {
 	/**
@@ -181,5 +182,15 @@ public class StructuredModelWrapper {
 				}
 				return result;
 			}});
+	}
+
+	public static Node getNode(IDocument document,final int superOffset) {
+		return execute(document, new ICommand<Node>(){
+
+			@Override
+			public Node execute(IDOMDocument xmlDocument) {
+				return Utils.findNodeForOffset(xmlDocument, superOffset);
+			}
+		});
 	}
 }

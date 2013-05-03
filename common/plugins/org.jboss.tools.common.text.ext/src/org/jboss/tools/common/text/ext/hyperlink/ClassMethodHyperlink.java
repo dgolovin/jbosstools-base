@@ -36,8 +36,10 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IStorageEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
 import org.jboss.tools.common.text.ext.ExtensionsPlugin;
 import org.jboss.tools.common.text.ext.util.StructuredModelWrapper;
+import org.jboss.tools.common.text.ext.util.StructuredModelWrapper.ICommand;
 import org.jboss.tools.common.text.ext.util.Utils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -155,27 +157,21 @@ public abstract class ClassMethodHyperlink extends AbstractHyperlink {
 		}
 	}
 	
-	protected String getAttributeValue(IRegion region, String attrName) {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(getDocument());
-			Document xmlDocument = smw.getDocument();
-			if (xmlDocument == null) return null;
-			
-			Node n = Utils.findNodeForOffset(xmlDocument, region.getOffset());
-
-			if (n == null || !(n instanceof Attr)) return null;
-			
-			Node node = ((Attr)n).getOwnerElement();
-			
-			Attr attr = (Attr)node.getAttributes().getNamedItem(attrName);
-			
-			return Utils.getTrimmedValue(getDocument(), attr);
-		} catch (BadLocationException x) {
-			//ignore
-			return null;
-		} finally {
-			smw.dispose();
-		}
+	protected String getAttributeValue(final IRegion region, final String attrName) {
+		return StructuredModelWrapper.execute(getDocument(),new ICommand<String>() {
+			@Override
+			public String execute(IDOMDocument xmlDocument) {
+				try {
+					Node n = Utils.findNodeForOffset(xmlDocument, region.getOffset());
+					if (n == null || !(n instanceof Attr)) return null;
+					Node node = ((Attr)n).getOwnerElement();
+					Attr attr = (Attr)node.getAttributes().getNamedItem(attrName);
+					return Utils.getTrimmedValue(getDocument(), attr);
+				} catch (BadLocationException x) {
+					//ignore
+					return null;
+				}
+			}
+		});
 	}
 }

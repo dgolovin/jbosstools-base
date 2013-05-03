@@ -11,10 +11,12 @@
 package org.jboss.tools.common.text.ext.hyperlink.xml;
 
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
 import org.jboss.tools.common.text.ext.hyperlink.AbstractHyperlinkPartitioner;
 import org.jboss.tools.common.text.ext.hyperlink.HyperlinkRegion;
 import org.jboss.tools.common.text.ext.hyperlink.IHyperlinkRegion;
 import org.jboss.tools.common.text.ext.util.StructuredModelWrapper;
+import org.jboss.tools.common.text.ext.util.StructuredModelWrapper.ICommand;
 import org.jboss.tools.common.text.ext.util.Utils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -23,20 +25,8 @@ public class IncludeHyperlinkPartitioner extends AbstractHyperlinkPartitioner {
 	public static final String INCLUDE_FILE_PARTITION = "org.jboss.tools.common.text.ext.hyperlink.xml.INCLUDE_FILE"; //$NON-NLS-1$
 	public static final String URL_NAME="url";
 	
-	public static Node getNode(IDocument document, int superOffset) {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(document);
-			Document xmlDocument = smw.getDocument();
-			if (xmlDocument == null)
-				return null;
-
-			Node node = Utils.findNodeForOffset(xmlDocument, superOffset); // #text
-
-			return node;
-		} finally {
-			smw.dispose();
-		}
+	public static Node getNode(IDocument document, final int superOffset) {
+		return StructuredModelWrapper.getNode(document,superOffset);
 	}
 
 	@Override

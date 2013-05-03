@@ -14,13 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.Region;
+import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMElement;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMText;
 import org.jboss.tools.common.text.ext.hyperlink.xml.XMLRootHyperlinkPartitioner;
 import org.jboss.tools.common.text.ext.util.RegionHolder;
 import org.jboss.tools.common.text.ext.util.StructuredModelWrapper;
+import org.jboss.tools.common.text.ext.util.StructuredModelWrapper.ICommand;
 import org.jboss.tools.common.text.ext.util.StructuredSelectionHelper;
 import org.jboss.tools.common.text.ext.util.Utils;
 import org.w3c.dom.Document;
@@ -61,43 +64,33 @@ abstract public class JumpToHyperlink extends AbstractHyperlink {
 	}
 	
 	protected NodeList getRootElementsToSearch (IRegion region) {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(getDocument());
-			Document xmlDocument = smw.getDocument();
-			if (xmlDocument == null) return null;
-
-			return xmlDocument.getChildNodes();
-		} finally {
-			smw.dispose();
-		}
+		return StructuredModelWrapper.execute(getDocument(), new ICommand<NodeList>(){
+			@Override
+			public NodeList execute(IDOMDocument xmlDocument) {
+				return xmlDocument.getChildNodes();
+			}});
 	}
 
-	protected RegionHolder getRegionHolder(String content, IRegion region) {
-		StructuredModelWrapper smw = new StructuredModelWrapper();
-		try {
-			smw.init(getDocument());
-			Document xmlDocument = smw.getDocument();
-			if (xmlDocument == null) return null;
-
-			List elements = findElementsByAxis(getRootElementsToSearch(region), getDestinationAxis());
-			
-			if (elements == null || elements.size() == 0) return null;
-			
-			for (int i = elements.size() - 1; i >= 0; i--) {
-				if (elements.get(i) instanceof IDOMElement) {
-					IDOMElement element = (IDOMElement)elements.get(i);
-					String text = Utils.trimQuotes(getElementText(element));
-					if (content.equals(text)) {
-						return new RegionHolder(new Region (element.getStartOffset(), 
-								element.getStartStructuredDocumentRegion().getLength()));
+	protected RegionHolder getRegionHolder(final String content, final IRegion region) {
+		return StructuredModelWrapper.execute(getDocument(),new ICommand<RegionHolder>(){
+			@Override
+			public RegionHolder execute(IDOMDocument xmlDocument) {
+				List elements = findElementsByAxis(getRootElementsToSearch(region), getDestinationAxis());
+				
+				if (elements == null || elements.size() == 0) return null;
+				
+				for (int i = elements.size() - 1; i >= 0; i--) {
+					if (elements.get(i) instanceof IDOMElement) {
+						IDOMElement element = (IDOMElement)elements.get(i);
+						String text = Utils.trimQuotes(getElementText(element));
+						if (content.equals(text)) {
+							return new RegionHolder(new Region (element.getStartOffset(), 
+									element.getStartStructuredDocumentRegion().getLength()));
+						}
 					}
 				}
-			}
-			return null;
-		} finally {
-			smw.dispose();
-		}
+				return null;
+			}});
 	}
 	
 	protected String getElementText(Node element) {

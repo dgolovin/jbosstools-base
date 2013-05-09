@@ -37,39 +37,31 @@ public abstract class LinkHyperlink extends AbstractHyperlink {
 	 * @see com.ibm.sse.editor.AbstractHyperlink#doHyperlink(org.eclipse.jface.text.IRegion)
 	 */
 	protected void doHyperlink(IRegion region) {
-			
-			String fileName = getFilePath(region);
+		String fileName;
+		try {
+			fileName = getFilePath(region);
 			IFile fileToOpen = getFileFromProject(fileName);
 			if (fileToOpen != null && fileToOpen.exists()) {
 				IWorkbenchPage workbenchPage = ExtensionsPlugin.getDefault().getWorkbench().getActiveWorkbenchWindow().getActivePage();
-				try {
+				
 					IDE.openEditor(workbenchPage,fileToOpen,true);
-				} catch (CoreException x) {
-					// could not open editor
-					openFileFailed();
-				}
-				return;
-			} 
-			try {
-				URL url = new URL(fileName);
-				IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
-				IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.LOCATION_BAR | IWorkbenchBrowserSupport.NAVIGATION_BAR, null, null, null);
-				browser.openURL(url);
-
-			} catch (MalformedURLException e) {
-				openFileFailed();
-			} catch (PartInitException e) {
-				openFileFailed();
+	
+					URL url = new URL(fileName);
+					IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
+					IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.LOCATION_BAR | IWorkbenchBrowserSupport.NAVIGATION_BAR, null, null, null);
+					browser.openURL(url);
 			}
+		} catch (BadLocationException e1) {
+			openFileFailed();
+		} catch (MalformedURLException e) {
+			openFileFailed();
+		} catch (PartInitException e) {
+			openFileFailed();
+		}
 	}
 	
-	protected String getFilePath(IRegion region) {
-		try {
-			return getDocument().get(region.getOffset(), region.getLength());
-		} catch (BadLocationException x) {
-			//ignore
-			return null;
-		} 
+	protected String getFilePath(IRegion region) throws BadLocationException {
+		return getDocument().get(region.getOffset(), region.getLength());
 	}
 	
 	protected String updateFilenameForModel(String filename, IProject project) {
@@ -82,11 +74,13 @@ public abstract class LinkHyperlink extends AbstractHyperlink {
 	 * @see IHyperlink#getHyperlinkText()
 	 */
 	public String getHyperlinkText() {
-		String filePath = getFilePath(getHyperlinkRegion());
-		if (filePath == null)
+		String filePath;
+		try {
+			filePath = getFilePath(getHyperlinkRegion());
+			return MessageFormat.format(Messages.OpenFile, filePath);
+		} catch (BadLocationException e) {
 			return  MessageFormat.format(Messages.OpenA, Messages.File);
-		
-		return MessageFormat.format(Messages.OpenFile, filePath);
+		}
 	}
 
 }

@@ -23,9 +23,6 @@ public class IncludeHyperlink extends AbstractHyperlink {
 	
 	@Override
 	protected void doHyperlink(IRegion region) {
-		if (region == null)
-			return;
-
 		try {
 			IDocument document = getDocument();
 			hyperlinkText = document

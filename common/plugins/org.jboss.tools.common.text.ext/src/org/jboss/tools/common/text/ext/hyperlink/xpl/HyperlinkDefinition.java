@@ -16,6 +16,7 @@ package org.jboss.tools.common.text.ext.hyperlink.xpl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -38,7 +39,7 @@ public class HyperlinkDefinition {
 	// contentTypeId -> List(paritionType, paritionType, partitionType, ...)
 	// contentTypeId2 -> List(partitionType, partitionType, ...)
 	// ...
-	private HashMap fContentTypes = null;
+	private Map<String,List<String>> fContentTypes = null;
 
 	private IConfigurationElement fConfigurationElement = null;
 
@@ -52,19 +53,19 @@ public class HyperlinkDefinition {
 		fId = id;
 		fClassName = class1;
 		fConfigurationElement = configurationElement;
-		fContentTypes = new HashMap();
+		fContentTypes = new HashMap<String,List<String>>(16);
 	}
 
 	public void addContentTypeId(String contentTypeId) {
 		if (!fContentTypes.containsKey(contentTypeId))
-			fContentTypes.put(contentTypeId, new ArrayList());
+			fContentTypes.put(contentTypeId, new ArrayList<String>());
 	}
 
 	public void addPartitionType(String contentTypeId, String partitionType) {
 		if (!fContentTypes.containsKey(contentTypeId))
-			fContentTypes.put(contentTypeId, new ArrayList());
+			fContentTypes.put(contentTypeId, new ArrayList<String>());
 
-		List partitionList = (List) fContentTypes.get(contentTypeId);
+		List<String> partitionList = fContentTypes.get(contentTypeId);
 		partitionList.add(partitionType);
 	}
 
@@ -85,7 +86,7 @@ public class HyperlinkDefinition {
 	/**
 	 * @return Returns the fContentTypes.
 	 */
-	public HashMap getContentTypes() {
+	public Map<String, List<String>> getContentTypes() {
 		return fContentTypes;
 	}
 

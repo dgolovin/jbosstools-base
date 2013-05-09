@@ -41,9 +41,9 @@ abstract public class JumpToHyperlink extends AbstractHyperlink {
 	 */
 	protected void doHyperlink(IRegion region) {
 	
-			RegionHolder holder = getRegionHolder(getName(region), region);
+			Region holder = getRegionHolder(getName(region), region);
 			if (holder != null) {
-				StructuredSelectionHelper.setSelectionAndRevealInActiveEditor(holder.region);
+				StructuredSelectionHelper.setSelectionAndRevealInActiveEditor(holder);
 			} else {
 				openFileFailed();
 			}
@@ -59,23 +59,13 @@ abstract public class JumpToHyperlink extends AbstractHyperlink {
 		}
 	}
 
-	protected String getDestinationAxis() {
-		return null;
-	}
+	abstract protected String getDestinationAxis();
 	
-	protected NodeList getRootElementsToSearch (IRegion region) {
-		return StructuredModelWrapper.execute(getDocument(), new ICommand<NodeList>(){
+	protected Region getRegionHolder(final String content, final IRegion region) {
+		return StructuredModelWrapper.execute(getDocument(),new ICommand<Region>(){
 			@Override
-			public NodeList execute(IDOMDocument xmlDocument) {
-				return xmlDocument.getChildNodes();
-			}});
-	}
-
-	protected RegionHolder getRegionHolder(final String content, final IRegion region) {
-		return StructuredModelWrapper.execute(getDocument(),new ICommand<RegionHolder>(){
-			@Override
-			public RegionHolder execute(IDOMDocument xmlDocument) {
-				List elements = findElementsByAxis(getRootElementsToSearch(region), getDestinationAxis());
+			public Region execute(IDOMDocument xmlDocument) {
+				List elements = findElementsByAxis(xmlDocument.getChildNodes(), getDestinationAxis());
 				
 				if (elements == null || elements.size() == 0) return null;
 				
@@ -84,8 +74,8 @@ abstract public class JumpToHyperlink extends AbstractHyperlink {
 						IDOMElement element = (IDOMElement)elements.get(i);
 						String text = Utils.trimQuotes(getElementText(element));
 						if (content.equals(text)) {
-							return new RegionHolder(new Region (element.getStartOffset(), 
-									element.getStartStructuredDocumentRegion().getLength()));
+							return new Region (element.getStartOffset(), 
+									element.getStartStructuredDocumentRegion().getLength());
 						}
 					}
 				}
@@ -108,7 +98,7 @@ abstract public class JumpToHyperlink extends AbstractHyperlink {
 				}
 			}
 			String result = text.toString();
-			if (result == null || result.length() == 0) return null;
+			if (result.length() == 0) return null;
 			return result;
 
 	}

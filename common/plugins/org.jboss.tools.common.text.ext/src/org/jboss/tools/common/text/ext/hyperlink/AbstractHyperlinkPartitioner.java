@@ -33,14 +33,14 @@ public abstract class AbstractHyperlinkPartitioner implements IHyperlinkPartitio
     public IHyperlinkRegion getChildPartitionRegion(IDocument document, int offset, IHyperlinkRegion superRegion) {
         IHyperlinkRegion childRegion = parse(document, offset, superRegion);
         if (childRegion == null) return null;
-        HyperlinkPartitionerDefinition[] hyperlinkPartitionerDefinitions = HyperlinkPartitionerBuilder.getInstance().getHyperlinkPartitionerDefinitions(childRegion.getContentType(), childRegion.getType(), childRegion.getAxis());
+        List<HyperlinkPartitionerDefinition> hyperlinkPartitionerDefinitions = HyperlinkPartitionerBuilder.getInstance().getHyperlinkPartitionerDefinitions(childRegion.getContentType(), childRegion.getType(), childRegion.getAxis());
 
         List<IHyperlinkPartitioner> partitioners = new ArrayList<IHyperlinkPartitioner>();
-        for(int i=0; i<hyperlinkPartitionerDefinitions.length; i++) {
-            HyperlinkPartitionerDefinition def = hyperlinkPartitionerDefinitions[i];
+        for(HyperlinkPartitionerDefinition def : hyperlinkPartitionerDefinitions) {
             IHyperlinkPartitioner partitioner = def.createHyperlinkPartitioner();
-            if (partitioner != null)
+            if (partitioner != null) {
             	partitioners.add(partitioner);
+            }
         }
         IHyperlinkPartitioner[] sortedPartitioners = orderHyperlinkPartitioners(partitioners.toArray(new IHyperlinkPartitioner[0])); 
         
@@ -96,9 +96,8 @@ public abstract class AbstractHyperlinkPartitioner implements IHyperlinkPartitio
 	}
 
     
-    IHyperlinkPartitioner findExclusionPartitioner (String partitionType, HyperlinkPartitionerDefinition[] hyperlinkPartitionerDefinitions, IDocument document, int offset, IHyperlinkRegion region) {
-        for(int i=0; i<hyperlinkPartitionerDefinitions.length; i++) {
-            HyperlinkPartitionerDefinition def = hyperlinkPartitionerDefinitions[i];
+    IHyperlinkPartitioner findExclusionPartitioner (String partitionType, List<HyperlinkPartitionerDefinition> hyperlinkPartitionerDefinitions, IDocument document, int offset, IHyperlinkRegion region) {
+        for(HyperlinkPartitionerDefinition def: hyperlinkPartitionerDefinitions) {
             IHyperlinkPartitioner partitioner = def.createHyperlinkPartitioner();
             if((partitioner instanceof IExclusiblePartitionerRecognition) && 
             		((IExclusiblePartitionerRecognition)partitioner).excludes(partitionType, document, offset, region)) {

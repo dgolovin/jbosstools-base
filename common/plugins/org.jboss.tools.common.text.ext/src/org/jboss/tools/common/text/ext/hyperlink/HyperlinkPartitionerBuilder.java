@@ -11,6 +11,7 @@
 package org.jboss.tools.common.text.ext.hyperlink;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.jboss.tools.common.text.ext.ExtensionsPlugin;
+import org.jboss.tools.common.text.ext.hyperlink.HyperlinkPartitionerDefinition.ContentType;
 import org.jboss.tools.common.text.ext.util.xpl.RegistryReader;
 
 /**
@@ -46,7 +48,7 @@ public class HyperlinkPartitionerBuilder extends RegistryReader {
 	
 
 	private static HyperlinkPartitionerBuilder fInstance;
-	private ArrayList fPartitionerDefs;
+	private List<HyperlinkPartitionerDefinition> fPartitionerDefs = new ArrayList<HyperlinkPartitionerDefinition>(32);
 	private HyperlinkPartitionerDefinition fCurrentHyperlinkPartitionerDefinition = null;
 	private String fCurrentContentType;
 	private String fCurrentPartitionType;
@@ -129,9 +131,6 @@ public class HyperlinkPartitionerBuilder extends RegistryReader {
 			fCurrentHyperlinkPartitionerDefinition = new HyperlinkPartitionerDefinition(theId, theClass, element);
 
 			// create a new list of open on partitioner definitions if it hasn't been created yet
-			if (fPartitionerDefs == null) {
-			    fPartitionerDefs = new ArrayList();
-			}
 			fPartitionerDefs.add(fCurrentHyperlinkPartitionerDefinition);
 		} else {
 		    fCurrentHyperlinkPartitionerDefinition = null;
@@ -203,9 +202,8 @@ public class HyperlinkPartitionerBuilder extends RegistryReader {
 	private void processAxisTag(IConfigurationElement element) {
 		// add to current hyperlinkPartitionerDefinition/contentType
 		String thePath = getPath(element);
-		boolean ignoreCase = isIgnoreCase(element);
-
 		if (thePath != null) {
+			boolean ignoreCase = isIgnoreCase(element);
 		    fCurrentHyperlinkPartitionerDefinition.addAxis(fCurrentContentType, fCurrentPartitionType, thePath, ignoreCase);
 		}
 	}
@@ -260,16 +258,11 @@ public class HyperlinkPartitionerBuilder extends RegistryReader {
 
 	
 	protected boolean isIgnoreCase(IConfigurationElement element) {
-		String value = element.getAttribute(ATT_IGNORE_CASE);
-		if("true".equals(value)) { //$NON-NLS-1$
-		    return true;
-		}
-		return false;
+		return "true".equals(element.getAttribute(ATT_IGNORE_CASE));
 	}
 
 	protected String getHyperlinkPartitionerClass(IConfigurationElement element) {
-		String value = element.getAttribute(ATT_CLASS);
-		return value;
+		return element.getAttribute(ATT_CLASS);
 	}
 
 	private void initCache() {
@@ -294,12 +287,9 @@ public class HyperlinkPartitionerBuilder extends RegistryReader {
 	 * Returns all the open on definition objects
 	 * @return
 	 */
-	public HyperlinkPartitionerDefinition[] getHyperlinkPartitionerDefinitions() {
+	public List<HyperlinkPartitionerDefinition> getHyperlinkPartitionerDefinitions() {
 	    initCache();
-	    if(fPartitionerDefs==null) {
-	        return new HyperlinkPartitionerDefinition[0];
-	    }
-		return (HyperlinkPartitionerDefinition[])fPartitionerDefs.toArray(new HyperlinkPartitionerDefinition[fPartitionerDefs.size()]);
+		return fPartitionerDefs;
 	}
 	
 	public String getBaseContentType(String contentType) {
@@ -321,34 +311,28 @@ public class HyperlinkPartitionerBuilder extends RegistryReader {
 	 * @param axis 
 	 * @return HyperlinkPartitionerDefinition[] 
 	 */
-	public HyperlinkPartitionerDefinition[] getHyperlinkPartitionerDefinitions(String contentType, String partitionType, String axis) {
-		if (contentType == null || partitionType == null) {
-			// should not be able to define an hyperlink without a content type
-			return null;
-		}
-
-		String baseContentType = getBaseContentType(contentType);
-		
-		// entire list of hyperlink definition objects
-		HyperlinkPartitionerDefinition[] allDefs = getHyperlinkPartitionerDefinitions();
-		// current list of open on definitions valid for contentType/partitionType/axis
-		List defs = new ArrayList();
-
-		for(int i=0; i<allDefs.length; i++) {
-			// for each one check if it contains contentType
-			List contentTypes = allDefs[i].getContentTypes();
-			for(int j=0; j<contentTypes.size(); j++) {
-			    HyperlinkPartitionerDefinition.ContentType cType = (HyperlinkPartitionerDefinition.ContentType)contentTypes.get(j);
-			    if(contentType.equals(cType.getId()) || baseContentType.equals(cType.getId())) {
-				    HyperlinkPartitionerDefinition.PartitionType pType = cType.getPartitionType(partitionType);
-				    if(pType!=null && pType.containtsAxis(axis)) {
-			            defs.add(allDefs[i]); 
+	public List<HyperlinkPartitionerDefinition> getHyperlinkPartitionerDefinitions(String contentType, String partitionType, String axis) {
+		List<HyperlinkPartitionerDefinition> defs = new ArrayList<HyperlinkPartitionerDefinition>();
+		if (contentType != null && partitionType != null) {
+			String baseContentType = getBaseContentType(contentType);
+			
+			// entire list of hyperlink definition objects
+			List<HyperlinkPartitionerDefinition> allDefs = getHyperlinkPartitionerDefinitions();
+			// current list of open on definitions valid for contentType/partitionType/axis
+	
+			for(HyperlinkPartitionerDefinition def : allDefs) {
+				// for each one check if it contains contentType
+				Collection<ContentType> contentTypes = def.getContentTypes();
+				for(HyperlinkPartitionerDefinition.ContentType cType : contentTypes) {
+				    if(contentType.equals(cType.getId()) || baseContentType.equals(cType.getId())) {
+					    HyperlinkPartitionerDefinition.PartitionType pType = cType.getPartitionType(partitionType);
+					    if(pType!=null && pType.containtsAxis(axis)) {
+				            defs.add(def); 
+					    }
 				    }
-			    }
+				}
 			}
 		}
-
-		// return the list
-		return (HyperlinkPartitionerDefinition[]) defs.toArray(new HyperlinkPartitionerDefinition[defs.size()]);
+		return defs;
 	}
 }

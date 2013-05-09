@@ -12,7 +12,14 @@ package org.jboss.tools.common.text.ext.hyperlink;
 
 import org.eclipse.jface.text.IDocument;
 
+/**
+ * 
+ * @author Victor Rubezhny <ruby@exadel.com>
+ *
+ */
 public interface IExclusiblePartitionerRecognition {
+	
 	String getExclusionPartitionType();
+	
 	boolean excludes(String partitionType, IDocument document, int offset, IHyperlinkRegion superRegion);
 }

@@ -7,7 +7,7 @@
  *
  * Contributors:
  *     Red Hat, Inc. - initial API and implementation
- ******************************************************************************/ 
+ ******************************************************************************/
 package org.jboss.tools.common.text.ext.hyperlink;
 
 import org.eclipse.jface.text.IDocument;
@@ -16,5 +16,6 @@ import org.eclipse.jface.text.IDocument;
  * @author Igels
  */
 public interface IHyperlinkPartitioner {
-    public IHyperlinkRegion getChildPartitionRegion(IDocument document, int offset, IHyperlinkRegion superRegion);
+	public IHyperlinkRegion getChildPartitionRegion(IDocument document,
+			int offset, IHyperlinkRegion superRegion);
 }

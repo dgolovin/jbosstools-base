@@ -71,9 +71,7 @@ public abstract class ClassMethodHyperlink extends AbstractHyperlink {
 				IEditorPart part = JavaUI.openInEditor(classMethod);
 				if (part != null) {
 					JavaUI.revealInEditor(part, classMethod);
-				}
-				else {
-					// could not open editor
+				} else {
 					openFileFailed();
 				}
 			} else {
@@ -85,7 +83,7 @@ public abstract class ClassMethodHyperlink extends AbstractHyperlink {
 	}
 
 	protected IJavaElement searchForClassMethod(IJavaProject javaProject,
-			String className, String methodName) {
+			String className, String methodName) throws CoreException {
 		// Get the search pattern
 		SearchPattern pattern = SearchPattern
 				.createPattern(
@@ -106,16 +104,11 @@ public abstract class ClassMethodHyperlink extends AbstractHyperlink {
 
 		// Search
 		SearchEngine searchEngine = new SearchEngine();
-		try {
-			searchEngine.search(pattern, new SearchParticipant[] { SearchEngine
-					.getDefaultSearchParticipant() }, scope, requestor, null);
-		} catch (CoreException ex) {
-			// ignore
-		}
-		for (Iterator i = matches.iterator(); i != null && i.hasNext();) {
-			return (IJavaElement) ((SearchMatch) i.next()).getElement();
-		}
-		return null;
+		searchEngine.search(pattern, new SearchParticipant[] { SearchEngine
+				.getDefaultSearchParticipant() }, scope, requestor, null);
+
+		return matches.size()>0 ? (IJavaElement)matches.get(0).getElement() : null;
+		
 	}
 
 	protected IJavaElement searchForClassMethod(String className, String methodName) {
@@ -137,7 +130,7 @@ public abstract class ClassMethodHyperlink extends AbstractHyperlink {
 				project = documentFile.getProject();
 			}
 			
-			if(project != null && project.isOpen() && project.hasNature(JavaCore.NATURE_ID)) { 
+			if(project.isOpen() && project.hasNature(JavaCore.NATURE_ID)) { 
 				IJavaProject javaProject = JavaCore.create(project);
 				result = searchForClassMethod(javaProject, className, methodName);
 			}

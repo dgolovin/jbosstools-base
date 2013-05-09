@@ -12,6 +12,7 @@ package org.jboss.tools.common.text.ext.hyperlink;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentExtension3;
@@ -51,18 +52,17 @@ public class HyperlinkDetector extends BaseHyperlinkDetector {
 		if (region != null) {
 		    documentRegionType = region.getType();
 			String contentType = getContentType(document);
-		    IHyperlinkRegion documentRegion = new HyperlinkRegion(region.getOffset(), region.getLength(), null, contentType, region.getType());
-		    
-			HyperlinkPartitionerDefinition[] defs = HyperlinkPartitionerBuilder.getInstance().getHyperlinkPartitionerDefinitions(contentType, documentRegionType, null);
+			Collection<HyperlinkPartitionerDefinition> defs = HyperlinkPartitionerBuilder.getInstance().getHyperlinkPartitionerDefinitions(contentType, documentRegionType, null);
 	
-			if(defs==null || defs.length==0) {
+			if(defs.isEmpty()) {
+				IHyperlinkRegion documentRegion = new HyperlinkRegion(region.getOffset(), region.getLength(), null, contentType, region.getType());
 				regions.add(documentRegion);
 			} else {
-				for(int i=0; i<defs.length; i++) {
+				for(HyperlinkPartitionerDefinition def : defs) {
 				    final ITypedRegion finalDocumentRegion = region;
 				    final IDocument finalDocument = document;
 				    final String finalContentType = contentType;
-				    IHyperlinkPartitioner hyperlinkPartitioner = defs[i].createHyperlinkPartitioner();
+				    IHyperlinkPartitioner hyperlinkPartitioner = def.createHyperlinkPartitioner();
 				    IHyperlinkRegion startHyperlinkRegion = new HyperlinkRegion(
 				    		finalDocumentRegion.getOffset(),
 				    		finalDocumentRegion.getLength(),

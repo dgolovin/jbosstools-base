@@ -28,6 +28,7 @@ import org.eclipse.jdt.internal.core.JarEntryFile;
 import org.eclipse.jdt.internal.core.JarEntryResource;
 import org.eclipse.jdt.internal.core.JarPackageFragmentRoot;
 import org.eclipse.jdt.internal.ui.javaeditor.JarEntryEditorInput;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IStorageEditorInput;
@@ -54,13 +55,8 @@ public class FaceletSourceTagHyperlink extends LinkHyperlink{
 			if(editorPart.getEditorInput() instanceof IStorageEditorInput && 
 					((IStorageEditorInput)editorPart.getEditorInput()).getStorage() instanceof JarEntryFile) {
 				current = (JarEntryFile)((IStorageEditorInput)editorPart.getEditorInput()).getStorage();
-			}
-		} catch (CoreException e) {
-			ExtensionsPlugin.getDefault().logError(e);
-		}
-		if(current != null) {
-			String fileToOpenName =getFilePath(region);
-			if(fileToOpenName!=null) {
+				String fileToOpenName =getFilePath(region);
+			
 				//remove whitespaces and first '/'
 				fileToOpenName = fileToOpenName.trim();
 				if(fileToOpenName.indexOf('/')==0) {
@@ -103,22 +99,11 @@ public class FaceletSourceTagHyperlink extends LinkHyperlink{
 				}
 			}
 			return;
-		} 
-		else if(editorPart.getEditorInput() instanceof IStorageEditorInput) {
-			IStorageEditorInput modelObjectStorageEditorInput = 
-				(IStorageEditorInput)	editorPart.getEditorInput(); 
-			try {
-				
-				IStorage storage = modelObjectStorageEditorInput.getStorage();
-				if(storage!=null && getFilePath(region)!=null) {
-					if(openOnFromModelEditorIntup(storage.getFullPath(), getFilePath(region))){
-						return;
-					}
-				}
-			} catch (CoreException e) {
-				ExtensionsPlugin.getDefault().logError(e);
-			}
-		} 
+		} catch(BadLocationException e1) {
+			ExtensionsPlugin.getPluginLog().logError(e1);
+		} catch (CoreException e2) {
+			ExtensionsPlugin.getPluginLog().logError(e2);
+		}
 		super.doHyperlink(region);
 	}
 	/**

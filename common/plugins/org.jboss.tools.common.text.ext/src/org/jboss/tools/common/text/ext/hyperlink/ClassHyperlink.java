@@ -64,32 +64,29 @@ public class ClassHyperlink extends AbstractHyperlink {
 			IEditorPart part = null;
 			String className = getClassName(region);
 			
-			if (className != null && className.trim().length() > 0)
+			if (className.trim().length() > 0) {
 				element = searchForClass(className);
-
-			if (element != null)
+			}
+			if (element != null) {
 				part = JavaUI.openInEditor(element);
-			
-			if (part != null && element != null)
+			}
+			if (part != null && element != null) {
 					JavaUI.revealInEditor(part, element);
-			else {
+			} else {
 				// could not open editor
 				openFileFailed();
 			}
 		} catch (CoreException x) {
-			// could not open editor
+			ExtensionsPlugin.getPluginLog().logError(x);
+			openFileFailed();
+		} catch (BadLocationException e) {
+			ExtensionsPlugin.getPluginLog().logError(e);
 			openFileFailed();
 		}
 	}
 
-	private String getClassName(IRegion region) {
-		try {
+	private String getClassName(IRegion region) throws BadLocationException {
 			return getDocument().get(region.getOffset(), region.getLength()).trim();
-		} catch (BadLocationException x) {
-			// Ignore
-			return null;
-		} finally {
-		}
 	}
 	
 	private IJavaElement searchForClass(IJavaProject javaProject, String className) throws JavaModelException {
@@ -130,47 +127,43 @@ public class ClassHyperlink extends AbstractHyperlink {
 		return null;
 	}
 	
-	private IJavaElement searchForClass(final String className) {
+	private IJavaElement searchForClass(final String className) throws CoreException {
 		IJavaElement result = null;
-		try {	
-			IFile documentFile = getFile();
-			IProject project = null;
-			if (documentFile == null) {
-				IWorkbenchPage workbenchPage = ExtensionsPlugin.getDefault().getWorkbench().getActiveWorkbenchWindow().getActivePage();
-				IEditorPart activeEditorPart = workbenchPage.getActiveEditor();
-				IEditorInput editorInput = activeEditorPart.getEditorInput();
-				//added by Maksim Areshkau, fix for https://jira.jboss.org/jira/browse/JBIDE-4638
-				//in this code we looking for java resource if editor has been opened in resource which packed into jar file
-				if (editorInput instanceof JarEntryEditorInput) {
-					JarEntryEditorInput jarEntryEditorInput = (JarEntryEditorInput) editorInput;
-					JarEntryResource jarEntryFile = (JarEntryResource) jarEntryEditorInput.getStorage();
-					IJavaProject parentProject = getProjectForJarResource(jarEntryFile);
+		IFile documentFile = getFile();
+		IProject project = null;
+		if (documentFile == null) {
+			IWorkbenchPage workbenchPage = ExtensionsPlugin.getDefault().getWorkbench().getActiveWorkbenchWindow().getActivePage();
+			IEditorPart activeEditorPart = workbenchPage.getActiveEditor();
+			IEditorInput editorInput = activeEditorPart.getEditorInput();
+			//added by Maksim Areshkau, fix for https://jira.jboss.org/jira/browse/JBIDE-4638
+			//in this code we looking for java resource if editor has been opened in resource which packed into jar file
+			if (editorInput instanceof JarEntryEditorInput) {
+				JarEntryEditorInput jarEntryEditorInput = (JarEntryEditorInput) editorInput;
+				JarEntryResource jarEntryFile = (JarEntryResource) jarEntryEditorInput.getStorage();
+				IJavaProject parentProject = getProjectForJarResource(jarEntryFile);
+				if (parentProject != null) {
+					result = searchForClass(parentProject, className);
+				}
+			} else  if (editorInput instanceof IStorageEditorInput) {
+				IStorageEditorInput moeInput = (IStorageEditorInput)editorInput;
+				IStorage storage = moeInput.getStorage();
+				if (storage instanceof JarEntryFile) {
+					IJavaProject parentProject = getProjectForJarResource((JarEntryFile)storage);
 					if (parentProject != null) {
 						result = searchForClass(parentProject, className);
 					}
-				} else  if (editorInput instanceof IStorageEditorInput) {
-					IStorageEditorInput moeInput = (IStorageEditorInput)editorInput;
-					IStorage storage = moeInput.getStorage();
-					if (storage instanceof JarEntryFile) {
-						IJavaProject parentProject = getProjectForJarResource((JarEntryFile)storage);
-						if (parentProject != null) {
-							result = searchForClass(parentProject, className);
-						}
-					}
-					IPath p = storage.getFullPath();
-					String s0 = p.segment(0);
-					project = ResourcesPlugin.getWorkspace().getRoot().getProject(s0); 
 				}
-			} else {
-				project = documentFile.getProject();
+				IPath p = storage.getFullPath();
+				String s0 = p.segment(0);
+				project = ResourcesPlugin.getWorkspace().getRoot().getProject(s0); 
 			}
-			
-			if(result==null && project != null && project.isOpen() && project.hasNature(JavaCore.NATURE_ID)) { 
-				IJavaProject javaProject = JavaCore.create(project);
-				result =  searchForClass(javaProject, className);
-			}
-		} catch (CoreException x) {
-			ExtensionsPlugin.getPluginLog().logError("Error while looking for class " + className, x); //$NON-NLS-1$
+		} else {
+			project = documentFile.getProject();
+		}
+		
+		if(result==null && project != null && project.isOpen() && project.hasNature(JavaCore.NATURE_ID)) { 
+			IJavaProject javaProject = JavaCore.create(project);
+			result =  searchForClass(javaProject, className);
 		}
 		return result;
 	}
@@ -196,10 +189,12 @@ public class ClassHyperlink extends AbstractHyperlink {
 	 * @see IHyperlink#getHyperlinkText()
 	 */
 	public String getHyperlinkText() {
-		String className = getClassName(getHyperlinkRegion());
-		if (className == null)
+		try {
+			String className = getClassName(getHyperlinkRegion());
+			return MessageFormat.format(Messages.OpenClass, className);
+		} catch(BadLocationException ex) {
 			return  MessageFormat.format(Messages.OpenA, Messages.Class);
+		}
 		
-		return MessageFormat.format(Messages.OpenClass, className);
 	}
 }

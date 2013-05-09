@@ -11,7 +11,10 @@
 package org.jboss.tools.common.text.ext.hyperlink;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.eclipse.core.runtime.CoreException;
@@ -95,7 +98,7 @@ public class HyperlinkPartitionerDefinition {
 	/**
 	 * @return Returns the fContentTypes.
 	 */
-	public List getContentTypes() {
+	public Collection<ContentType> getContentTypes() {
 		return fContentTypes.getTypes();
 	}
 
@@ -150,53 +153,40 @@ public class HyperlinkPartitionerDefinition {
 		result[0] = null;
 	}
 
-	private static class TypeMap {
+	private static class TypeMap<T extends TypeWithId> {
 
-	    protected ArrayList<Object> fTypes =  new ArrayList<Object>();
+	    protected Map<String, T> fTypes =  new HashMap<String, T>();
 
-	    public List getTypes() {
-	        return fTypes;
+	    public Collection<T> getTypes() {
+	        return fTypes.values();
+	    }
+	    
+	    public void addType(T type) {
+	        if(!fTypes.containsKey(type.getId())) {
+	            fTypes.put(type.getId(),type);
+	        }
 	    }
 	}
 
-	private static class ContentTypeMap extends TypeMap {
-
-	    public void addType(ContentType type) {
-	        if(!fTypes.contains(type)) {
-	            fTypes.add(type);
-	        }
-	    }
+	private static class ContentTypeMap extends TypeMap<ContentType> {
 
 	    public ContentType getContentType(String id) {
-	        for(int i=0; i<fTypes.size(); i++) {
-	            ContentType type = (ContentType)fTypes.get(i);
-	            if(type.getId().equals(id)) {
-	                return type;
-	            }
-	        }
-	        return null;
+	    	return fTypes.get(id);
 	    }
 	}
 
-	private static class PartitionTypeMap extends TypeMap {
-	    public void addType(PartitionType type) {
-	        if(!fTypes.contains(type)) {
-	            fTypes.add(type);
-	        }
-	    }
+	private static class PartitionTypeMap extends TypeMap<PartitionType> {
 
 	    public PartitionType getPartitionType(String id) {
-	        for(int i=0; i<fTypes.size(); i++) {
-	            PartitionType type = (PartitionType)fTypes.get(i);
-	            if(type.getId().equals(id)) {
-	                return type;
-	            }
-	        }
-	        return null;
+	    	return fTypes.get(id);
 	    }
 	}
+	
+	public static interface TypeWithId {
+		String getId();
+	}
 
-	public static class ContentType {
+	public static class ContentType implements TypeWithId{
 
 	    private PartitionTypeMap fPartitionTypeMap;
 	    private String fId;
@@ -217,7 +207,7 @@ public class HyperlinkPartitionerDefinition {
 	        }
 	    }
 
-	    public List getPartitionTypes() {
+	    public Collection<PartitionType> getPartitionTypes() {
 	        return fPartitionTypeMap.getTypes();
 	    }
 
@@ -243,7 +233,7 @@ public class HyperlinkPartitionerDefinition {
         }
 	}
 
-	public static class PartitionType {
+	public static class PartitionType implements TypeWithId{
 
 	    private List<Axis> fAxises;
 	    private String fId;

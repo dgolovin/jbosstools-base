@@ -14,6 +14,7 @@
 package org.jboss.tools.common.text.ext.hyperlink.xpl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -182,10 +183,9 @@ public class BaseHyperlinkBuilder extends RegistryReader{
 	 * Returns all the open on definition objects
 	 * @return
 	 */
-	public HyperlinkDefinition[] getHyperlinkDefinitions() {
+	public Collection<HyperlinkDefinition> getHyperlinkDefinitions() {
 		initCache();
-		return (fHyperlinkDefs == null ? new HyperlinkDefinition[0] : 
-		(HyperlinkDefinition[])fHyperlinkDefs.toArray(new HyperlinkDefinition[fHyperlinkDefs.size()]));
+		return fHyperlinkDefs;
 	}
 
 	/**
@@ -194,38 +194,30 @@ public class BaseHyperlinkBuilder extends RegistryReader{
 	 * @param partitionType
 	 * @return if either contentType or partitionType is null, null is returned 
 	 */
-	public HyperlinkDefinition[] getHyperlinkDefinitions(String contentType, String partitionType) {
-		if (contentType == null || partitionType == null) {
-			// should not be able to define an hyperlink without a content type
-			// but if it were possible then would need to search all hyperlink definitions for
-			// definitions with empty contentType list
-			return null;
-		}
-
+	public Collection<HyperlinkDefinition> getHyperlinkDefinitions(String contentType, String partitionType) {
 		// entire list of hyperlink definition objects
-		HyperlinkDefinition[] allDefs = getHyperlinkDefinitions();
+		Collection<HyperlinkDefinition> allDefs = getHyperlinkDefinitions();
 		// current list of open on definitions valid for contentType/partitionType
-		List defs = new ArrayList();
+		List<HyperlinkDefinition> defs = new ArrayList<HyperlinkDefinition>();
 		// default definitions that should be added to end of list of open on definitions
-		List lastDefs = new ArrayList();
+		List<HyperlinkDefinition> lastDefs = new ArrayList<HyperlinkDefinition>();
 
-		for (int i = 0; i < allDefs.length; ++i) {
+		for( HyperlinkDefinition allDef : allDefs) {
 			// for each one check if it contains contentType
-			List partitions = (List) allDefs[i].getContentTypes().get(contentType);
+			List<String> partitions = allDef.getContentTypes().get(contentType);
 			if (partitions != null) {
 				// this hyperlink definition is valid for all partition types for this content type
 				if (partitions.isEmpty()) {
 					// this will be added to end of list because this is considered a default hyperlink
-					lastDefs.add(allDefs[i]);
-				}
-				else {
+					lastDefs.add(allDef);
+				} else {
 					// examine the partition types of this hyperlink
 					int j = 0; // current index in list of partitions
 					boolean added = false; // hyperlink has been added to list
 					while (j < partitions.size() && !added) {
 						// this hyperlink definition applies to partitionType so add to list of valid hyperlinks
 						if (partitionType.equals(partitions.get(j))) {
-							defs.add(allDefs[i]);
+							defs.add(allDef);
 							added = true;
 						}
 						else {
@@ -240,7 +232,7 @@ public class BaseHyperlinkBuilder extends RegistryReader{
 		defs.addAll(lastDefs);
 
 		// return the list
-		return (HyperlinkDefinition[]) defs.toArray(new HyperlinkDefinition[defs.size()]);
+		return defs;
 	}
 	
 }

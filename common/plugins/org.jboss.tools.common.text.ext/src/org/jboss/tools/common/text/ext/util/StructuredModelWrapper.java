@@ -29,6 +29,7 @@ import org.jboss.tools.common.text.ext.hyperlink.AbstractHyperlink;
 import org.w3c.dom.Document;
 
 public class StructuredModelWrapper {
+
 	/**
 	 * Interface to use with static <code>execute(IFile file, final Command command)</code>
 	 * method. Use inner class if access to class' fields or final local variables 

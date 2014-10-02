@@ -62,7 +62,7 @@ import org.jboss.tools.common.model.ui.ModelUIPlugin;
 import org.jboss.tools.common.model.ui.editor.IModelObjectEditorInput;
 import org.jboss.tools.common.text.ext.IMultiPageEditor;
 
-public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModelTreeListener, IGotoMarker, IMultiPageEditor {
+public abstract class ObjectMultiPageEditor extends MultiPageEditorPart implements XModelTreeListener, IGotoMarker, IMultiPageEditor {
 	protected AbstractSectionEditor treeEditor;
 	protected TreeFormPage treeFormPage;
 	protected ObjectTextEditor textEditor;
@@ -213,8 +213,8 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 		QualifiedName qn = new QualifiedName("", "Selected_tab_" + path); //$NON-NLS-1$ //$NON-NLS-2$
 		try {
 			p.setPersistentProperty(qn, "" + selectedPageIndex); //$NON-NLS-1$
-		} catch (CoreException e) {
-			//ignore
+		} catch (CoreException e) {	
+			ModelUIPlugin.getPluginLog().logInfo("Cannot save selected tab index.", e);
 		}
 	}
 
@@ -233,36 +233,35 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 	protected void createPages() {
 		IEditorInput _input = getEditorInput();
 		setPartName(_input.getName());
-		if(!(_input instanceof IModelObjectEditorInput)) {
+		if(_input instanceof IModelObjectEditorInput) {
+			input = (IModelObjectEditorInput)getEditorInput();
+			object = input.getXModelObject();
+			timeStamp = object.getTimeStamp();
+			lastModifiedTimeStamp = object.isModified() ? -1 : object.getLastModificationTimeStamp();
+			cache = new XModelObjectCache(object);
+			outline.setCache(cache);
+			model = object.getModel();
+			getSite().setSelectionProvider(selectionProvider);
+			doCreatePages();
+			model.addModelTreeListener(syncListener);
+			loadSelectedTab();
+			if(selectedPageIndex < getPageCount()) {
+				setActivePage(selectedPageIndex);
+			}
+			updateSelectionProvider();
+			new ResourceChangeListener(this, getContainer());
+		} else {
 			createUnloadedPage();
-			return;
-		} 
-		input = (IModelObjectEditorInput)getEditorInput();
-		object = input.getXModelObject();
-		timeStamp = (object == null) ? -1 : object.getTimeStamp();
-		lastModifiedTimeStamp = (object == null || object.isModified()) ? -1 : object.getLastModificationTimeStamp();
-		cache = new XModelObjectCache(object);
-		outline.setCache(cache);
-		model = object.getModel();
-		getSite().setSelectionProvider(selectionProvider);
-		doCreatePages();
-		model.addModelTreeListener(syncListener);
-		loadSelectedTab();
-		if(selectedPageIndex < getPageCount()) {
-			setActivePage(selectedPageIndex);
 		}
-		updateSelectionProvider();
-		new ResourceChangeListener(this, getContainer());
 	}
 	
 	public void selectPageByName(String name) {
-		if(name == null) return;
 		for (int i = 0; i < getPageCount(); i++) {
 			String h = getPageText(i);
-			if(name.equals(h)) {
-				if(selectedPageIndex == i) return;
+			if(h.equals(name)) {
 				selectedPageIndex = i;
 				switchToPage(i);
+				break;
 			}
 		}
 		
@@ -280,16 +279,16 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 	}
 	
 	protected void createTextPage() {
-		textEditor = createTextEditor();
+		ObjectTextEditor tempEditor = createTextEditor();
 		try {
-			int index = addPage((IEditorPart)textEditor, getEditorInput());
+			int index = addPage((IEditorPart)tempEditor, getEditorInput());
 			setPageText(index, ObjectMultiPageEditorMessages.PAGES_EDITOR_SOURCE_TAB); 
-			textEditor.setObject(object);
-			textEditor.addFocusListener(new TextFocusListener());
+			tempEditor.setObject(object);
+			tempEditor.addFocusListener(new TextFocusListener());
 			outline.addSelectionChangedListener(new OutlineSelectionListener());
+			textEditor = tempEditor;
 		} catch (PartInitException ex) {
 			ModelUIPlugin.getPluginLog().logError(ex);
-			textEditor = null;
 		}
 	}
 	
@@ -300,7 +299,6 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 			if(isFiringToSource) return;
 			ISelection s = event.getSelection();
 			if(s.isEmpty() || !(s instanceof IStructuredSelection)) return;
-///			if(getActivePage() != getSourcePageIndex()) return;
 			if(selectionProvider.isFiringSelection() && getActivePage() == getSourcePageIndex()) return;
 			if(outline.getControl() == null || outline.getControl().isDisposed()) return;
 			boolean isFocused = outline.getControl().isFocusControl();
@@ -332,9 +330,7 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 		selectionProvider.addHost("treeEditor", treeEditor.getSelectionProvider()); //$NON-NLS-1$
 	}
 	
-	protected ObjectTextEditor createTextEditor() {
-		return null;	
-	}
+	protected abstract ObjectTextEditor createTextEditor();
 
 	public boolean isDirty() {
 		if(super.isDirty()) return true;
@@ -396,21 +392,22 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 	 * @param monitor
 	 */
 	void saveX(IProgressMonitor monitor) {
-		if(!(textEditor instanceof AbstractTextEditor)) return;
-		try {
-			Method m = AbstractTextEditor.class.getDeclaredMethod("performSave", new Class[]{boolean.class, IProgressMonitor.class}); //$NON-NLS-1$
-			m.setAccessible(true);
-			m.invoke(textEditor, new Object[]{Boolean.TRUE, monitor});
-		} catch (SecurityException e) {
-			ModelUIPlugin.getPluginLog().logError(e);
-		} catch (NoSuchMethodException e) {
-			ModelUIPlugin.getPluginLog().logError(e);
-		} catch (IllegalArgumentException e) {
-			ModelUIPlugin.getPluginLog().logError(e);
-		} catch (InvocationTargetException e) {
-			ModelUIPlugin.getPluginLog().logError(e);
-		} catch (IllegalAccessException e) {
-			ModelUIPlugin.getPluginLog().logError(e);
+		if(textEditor instanceof AbstractTextEditor) {
+			try {
+				Method m = AbstractTextEditor.class.getDeclaredMethod("performSave", new Class[]{boolean.class, IProgressMonitor.class}); //$NON-NLS-1$
+				m.setAccessible(true);
+				m.invoke(textEditor, new Object[]{Boolean.TRUE, monitor});
+			} catch (SecurityException e) {
+				ModelUIPlugin.getPluginLog().logError(e);
+			} catch (NoSuchMethodException e) {
+				ModelUIPlugin.getPluginLog().logError(e);
+			} catch (IllegalArgumentException e) {
+				ModelUIPlugin.getPluginLog().logError(e);
+			} catch (InvocationTargetException e) {
+				ModelUIPlugin.getPluginLog().logError(e);
+			} catch (IllegalAccessException e) {
+				ModelUIPlugin.getPluginLog().logError(e);
+			}
 		}
 	}
 
@@ -650,19 +647,9 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 	
 	class TextFocusListener extends FocusAdapter {
 		public void focusLost(FocusEvent e) {
-			if(!textEditor.isModified()) return;
-			Display.getDefault().syncExec( 
-				new Runnable() {
-					public void run() {
-						try {
-							Thread.sleep(200);
-						} catch (InterruptedException e) {
-							//ignore
-						}
-						textEditor.save();
-					}
-				}
-			);			
+			if(textEditor.isModified()) {
+				textEditor.save();
+			}			
 		}
 	}
 	
@@ -709,16 +696,12 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 	TextSelectionProvider textSelectionProvider = new TextSelectionProvider();
 	
 	protected AbstractSelectionProvider getTextSelectionProvider() {
-		textSelectionProvider.init();
 		return textSelectionProvider;
 	}
 	
 	private class TextSelectionProvider extends AbstractSelectionProvider implements ISelectionChangedListener {
-		boolean inites = false;
-		
-		public void init() {
-			if(inites) return;
-			inites = true;
+
+		public TextSelectionProvider() {
 			if(textEditor instanceof TextEditor) {
 				((TextEditor)textEditor).getSelectionProvider().addSelectionChangedListener(this);
 			}
@@ -726,8 +709,10 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 
 		protected XModelObject getSelectedModelObject() {
 			XModelObject o = textEditor == null ? null : textEditor.findModelObjectAtCursor();
-			if(o != null) return o;
-			return getModelObject();
+			if(o == null) {
+				o = getModelObject(); 
+			}
+			return o;
 		}
 
 		protected void setSelectedModelObject(XModelObject object) {
@@ -737,13 +722,6 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 		public void selectionChanged(SelectionChangedEvent event) {
 			fireSelectionChanged();
 		}
-		
-		public void dispose() {
-			if(textEditor instanceof TextEditor) {
-				((TextEditor)textEditor).getSelectionProvider().removeSelectionChangedListener(this);
-			}
-		}
-		
 	}
 
 	/**
@@ -762,15 +740,18 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 			}
 		}
 	
-		public void partBroughtToTop(IWorkbenchPart part) {}
+		public void partBroughtToTop(IWorkbenchPart part) {
+		}
 	
-		public void partClosed(IWorkbenchPart part) {}
+		public void partClosed(IWorkbenchPart part) {
+		}
 	
 		public void partDeactivated(IWorkbenchPart part) {
 			fActivePart= null;
 		}
 	
-		public void partOpened(IWorkbenchPart part) {}
+		public void partOpened(IWorkbenchPart part) {
+		}
 	
 		public void shellActivated(ShellEvent e) {
 			updateEditableMode();
@@ -825,8 +806,6 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 	}
 
 	protected boolean doSanityCheckState(IEditorInput input) {
-		if (input == null) return false;
-
 		if (input instanceof IFileEditorInput) {
 			IFile iFile = ((IFileEditorInput)input).getFile();
 			if (iFile == null) return false;
@@ -865,28 +844,23 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 	
 	private void handleEditorInputChanged() throws XModelException {
 		XModelObject o = getModelObject();
-		if(o == null) return;
-		if(input instanceof IFileEditorInput && o.getParent() instanceof FolderImpl) {
+		if(input instanceof IFileEditorInput && o !=null && o.getParent() instanceof FolderImpl) {
 			FolderImpl f = (FolderImpl)o.getParent();
 			IFile file = ((IFileEditorInput)input).getFile();
 			if(file.isSynchronized(IResource.DEPTH_ZERO)) return;
 			f.updateChildFile(o, file.getLocation().toFile());
-			if(textEditor instanceof ITextEditor) {
-				IDocumentProvider provider = ((ITextEditor)textEditor).getDocumentProvider();
-				if(provider instanceof IDocumentProviderExtension) {
-					IDocumentProviderExtension extension= (IDocumentProviderExtension) provider;
-					try {
+			try {
+				if(textEditor instanceof ITextEditor) {
+					IDocumentProvider provider = ((ITextEditor)textEditor).getDocumentProvider();
+					if(provider instanceof IDocumentProviderExtension) {
+						IDocumentProviderExtension extension= (IDocumentProviderExtension) provider;
 						extension.synchronize(input);
-					} catch (CoreException e) {
-						ModelUIPlugin.getDefault().logError(e);
 					}
-				}
-			} else {
-				try {
+				} else {
 					file.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
-				} catch (CoreException e) {
-					ModelUIPlugin.getDefault().logError(e);
 				}
+			} catch (CoreException e) {
+				ModelUIPlugin.getDefault().logError(e);
 			}
 			f.setModified(false);
 			firePropertyChange(ITextEditor.PROP_DIRTY);
@@ -1061,19 +1035,16 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 				XModelObject o = null;
 				for (int i = 0; i < 5 && o == null; i++) {
 					o = EclipseResourceUtil.getObjectByResource(file);
-					if(o == null) try {
-						Thread.sleep(200);
-					} catch (InterruptedException e) {
-						//ignore
-					}
 				}
-				if(o == null) o = EclipseResourceUtil.createObjectForResource(file);
+				if(o == null) {
+					o = EclipseResourceUtil.createObjectForResource(file);
+				}
 				if(o != null) {
 					XActionInvoker.invoke("Open", o, null); //$NON-NLS-1$
 				}
 			} 
 		}		
-		if (progressMonitor != null) progressMonitor.setCanceled(!success);
+		if (progressMonitor != null) progressMonitor.done();
 	}
 	private void initSaveAsDialog(SaveAsDialog dialog) {
 		IFile original = (input instanceof IFileEditorInput) ? ((IFileEditorInput) input).getFile() : null;
@@ -1129,12 +1100,11 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 				//link outline only to text editor
 				return;
 			}
-			ISelectionProvider parentProvider = getMultiPageEditor().getSite().getSelectionProvider();
 			ISelection s = event.getSelection();
-			if(s == null || s.isEmpty()) return;
-			if(s instanceof ITextSelection) {
+			if(s instanceof ITextSelection && !s.isEmpty()) {
 				XModelObject o = textEditor.findModelObjectAtCursor();
 				if(o != null) {
+					ISelectionProvider parentProvider = getMultiPageEditor().getSite().getSelectionProvider();
 					SelectionChangedEvent newEvent = new SelectionChangedEvent(parentProvider, new StructuredSelection(o));
 					if(parentProvider instanceof XModelObjectSelectionProvider) {
 						((XModelObjectSelectionProvider)parentProvider).postSelectionChanged(newEvent);
@@ -1145,21 +1115,16 @@ public class ObjectMultiPageEditor extends MultiPageEditorPart implements XModel
 
 		public void setSelectionProvider(ISelectionProvider provider) {
 			ISelectionProvider oldSelectionProvider = getSelectionProvider();
-			if (oldSelectionProvider != null) {
-				if (oldSelectionProvider instanceof IPostSelectionProvider) {
-					((IPostSelectionProvider) oldSelectionProvider).removePostSelectionChangedListener(getPostSelectionChangedListener());
-				}
+			if (oldSelectionProvider instanceof IPostSelectionProvider) {
+				((IPostSelectionProvider) oldSelectionProvider).removePostSelectionChangedListener(getPostSelectionChangedListener());
 			}
 
 			super.setSelectionProvider(provider);
 
-			if (provider != null) {
-				if (provider instanceof IPostSelectionProvider) {
-					((IPostSelectionProvider) provider).addPostSelectionChangedListener(getPostSelectionChangedListener());
-				}
+			if (provider instanceof IPostSelectionProvider) {
+				((IPostSelectionProvider) provider).addPostSelectionChangedListener(getPostSelectionChangedListener());
 			}
 		}
-
 	}
 }
 
@@ -1171,15 +1136,17 @@ class ResourceChangeListener implements IResourceChangeListener {
 		this.editorPart = editorPart;
 		this.container = container;
 		IWorkspace workspace = ModelUIPlugin.getWorkspace();
-		if (workspace == null) return;
-		workspace.addResourceChangeListener(this);
-		container.addDisposeListener(new DisposeListener() {
-			public void widgetDisposed(DisposeEvent e) {
-				IWorkspace workspace = ModelUIPlugin.getWorkspace();
-				if (workspace == null) return;
-				workspace.removeResourceChangeListener(ResourceChangeListener.this);
-			}
-		});
+		if (workspace != null) {
+			workspace.addResourceChangeListener(this);
+			container.addDisposeListener(new DisposeListener() {
+				public void widgetDisposed(DisposeEvent e) {
+					IWorkspace workspace = ModelUIPlugin.getWorkspace();
+					if (workspace != null) {
+						workspace.removeResourceChangeListener(ResourceChangeListener.this);
+					}
+				}
+			});
+		}
 	}
 
 	public void resourceChanged(IResourceChangeEvent event) {
@@ -1200,16 +1167,16 @@ class ResourceChangeListener implements IResourceChangeListener {
 		if(f == null) return;
 		IPath path = getPathChange(event, f);
 		if(path == null) {
-			if(f != null && !f.exists()) closeEditor();
+			if(f.exists()) closeEditor();
 			return;
 		}
 		f = ModelPlugin.getWorkspace().getRoot().getFile(path);
-		XModelObject p = f == null ? null : EclipseResourceUtil.getObjectByResource(f.getParent());
+		XModelObject p = EclipseResourceUtil.getObjectByResource(f.getParent());
 		if(p instanceof FolderImpl) {
 			((FolderImpl)p).update();
 		}
 		final XModelObject o = EclipseResourceUtil.getObjectByResource(f);
-		if(f != null && f.exists() && o != null) {
+		if(f.exists() && o != null) {
 			if(editorPart instanceof ObjectMultiPageEditor) {
 				final ObjectMultiPageEditor e = (ObjectMultiPageEditor)editorPart;
 				if(ei instanceof XModelObjectEditorInput) {
@@ -1226,7 +1193,7 @@ class ResourceChangeListener implements IResourceChangeListener {
 				}
 			}
 		}
-		if(f == null || f.exists()) return;
+		if(f.exists()) return;
 		closeEditor();
 	}
 
@@ -1348,7 +1315,6 @@ class NatureChecker {
 		if(natures != null && natures.length == 0) return true;
 		IModelNature n = EclipseResourceUtil.getModelNature(project);
 		if(n == null) return false;
-		if(natures == null) return true;
 		for (int i = 0; i < natures.length; i++) {
 			if(EclipseResourceUtil.getModelNature(project, natures[i]) != null) return true;
 		}

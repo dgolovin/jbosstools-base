@@ -77,7 +77,7 @@ import org.osgi.framework.Bundle;
 public class EclipseResourceUtil extends EclipseUtil {
 	
 	public static IProject getProject(XModelObject o) {
-		return (o == null) ? null : (IProject)o.getModel().getProperties().get(XModelObjectConstants.PROJECT);
+		return (IProject)o.getModel().getProperties().get(XModelObjectConstants.PROJECT);
 	}
 	
 	public static boolean isProjectFragment(XModel model) {

@@ -39,6 +39,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -86,28 +87,20 @@ public class FileUtils {
     }
 
     public static ReadBytes readBytes(File f) {
-        if(!f.isFile()) return null;
-        BufferedInputStream br = null;
-        try {
-            FileInputStream fr = new FileInputStream(f);
-            br = new BufferedInputStream(fr);
-            int l = (int)f.length();
-            byte[] bs = new byte[l];
-            l = br.read(bs, 0, l);
-            br.close();
-            fr.close();
-            return new ReadBytes(bs, l);
-        } catch (IOException e) {
-        	return null;
-        } finally {
-        	if(br!=null) {
-        		try {
-					br.close();
-				} catch (IOException e) {
-					//ignore
-				}
-        	}
+        if(f.isFile()) {
+	        BufferedInputStream br = null;
+	        try {
+	            br = new BufferedInputStream(new FileInputStream(f));
+	            int l = (int)f.length();
+	            byte[] bs = new byte[l];
+	            l = br.read(bs, 0, l);
+	            return new ReadBytes(bs, l);
+	        } catch (IOException e) { // TODO: Figure out if it is right place to catch
+	        } finally {
+	        	IOUtils.closeQuietly(br);	
+	        }
         }
+        return null;
     }
     
     static class ReadBytes {
@@ -119,41 +112,41 @@ public class FileUtils {
     		length = l;
     	}
     }
-
-    public static String readFile(File f, String encoding) {
-    	ReadBytes bs = readBytes(f);
-    	if(bs == null) return null;
-        try {
-            return new String(bs.bs, 0, bs.length, encoding);
-        } catch (UnsupportedEncodingException e) {
-        	return null;
-        }
+    /**
+     * Reads file to string and return it
+     * @param file the File to read from 
+     * @param encoding the Encoding name to use
+     * @return the string representation for f or null in case of IOException
+     */
+    public static String readFile(File file, String encoding) {
+    	InputStream is = null;
+    	String result = null;
+    	try {
+    		is = new BufferedInputStream(new FileInputStream(file));
+			result = IOUtils.toString(is, encoding);
+		} catch (IOException e1) { // ignore and close quietly
+		} finally {
+			IOUtils.closeQuietly(is);
+		}
+    	return result;
     }
 
     public static boolean isTextFile(File f, int length) {
-        if(!f.isFile()) return false;
-        BufferedReader br = null;
-        try {
-            FileReader fr = new FileReader(f);
-            br = new BufferedReader(fr);
-            int l = (int)f.length();
-            if(l > length) l = length;
-            char[] cs = new char[l];
-            br.read(cs, 0, l);
-            br.close();
-            fr.close();
-            return isText(new String(cs));
-        } catch (IOException e) {
-            return false;
-        } finally {
-        	if(br!=null) {
-        		try {
-					br.close();
-				} catch (IOException e) {
-					// ignore
-				}
-        	}
+        if(f.isFile())  {
+	        BufferedReader br = null;
+	        try {
+	            br = new BufferedReader(new FileReader(f));
+	            int l = (int)f.length();
+	            if(l > length) l = length;
+	            char[] cs = new char[l];
+	            br.read(cs, 0, l);
+	            return isText(new String(cs));
+	        } catch (IOException e) {
+	        } finally {
+	        	IOUtils.closeQuietly(br);
+	        }
         }
+        return false;
     }
 
     public static boolean isText(String body) {
@@ -180,11 +173,7 @@ public class FileUtils {
         } catch (IOException e) {
         	CommonCorePlugin.getPluginLog().logError(e);
         } finally {
-            try {
-				is.close();
-			} catch (IOException e) {
-				// Ignore
-			}
+        	IOUtils.closeQuietly(is);
         }
         return sb.toString();
     }
@@ -223,11 +212,7 @@ public class FileUtils {
         } catch (IOException e) {
         	CommonCorePlugin.getPluginLog().logError(e);
         } finally {
-            try {
-				is.close();
-			} catch (IOException e) {
-				// Ignore
-			}
+        	IOUtils.closeQuietly(is);
         }
 
         return sb.toString();
@@ -342,13 +327,7 @@ public class FileUtils {
     }
 
     public static void copyStream(InputStream is, OutputStream os) throws IOException {
-        byte[] buffer = new byte[1<<14];
-        while (true) {
-            int r = is.read(buffer);
-            if (r > 0) {
-                os.write(buffer, 0, r);
-            } else if (r == -1) break;
-        }
+        copy(is, os);
         os.flush();
     }
 
@@ -543,14 +522,7 @@ public class FileUtils {
     }
 
     public static void copy(InputStream f, OutputStream t) throws IOException {
-    	try {
-    		byte[] b = new byte[1024];
-    		int q = 0;
-    		while((q = f.read(b, 0, b.length)) > 0) t.write(b, 0, q);
-    	} finally {
-    		f.close();    
-    		t.close();
-    	}
+    	IOUtils.copy(f,t);
     }
 
     public static void unzip(File dest, String jar) throws IOException {

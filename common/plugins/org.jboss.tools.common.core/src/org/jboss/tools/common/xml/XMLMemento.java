@@ -33,6 +33,7 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.commons.io.IOUtils;
 import org.jboss.tools.common.core.CommonCorePlugin;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -97,11 +98,7 @@ public final class XMLMemento implements IMemento {
 		} catch (IOException e) {
 			CommonCorePlugin.logException(e);
 		} finally {
-			try {
-				in.close();
-			} catch (Exception e) {
-				// ignore
-			}
+			IOUtils.closeQuietly(in);
 		}
 		return null;
 	}
@@ -297,12 +294,7 @@ public final class XMLMemento implements IMemento {
 			in = new BufferedInputStream(new FileInputStream(filename));
 			return XMLMemento.createReadRoot(in);
 		} finally {
-			try {
-				if (in != null)
-					in.close();
-			} catch (IOException e) {
-				// ignore
-			}
+			IOUtils.closeQuietly(in);
 		}
 	}
 

@@ -14,6 +14,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.*;
 import org.osgi.framework.Bundle;
@@ -175,13 +176,7 @@ public class MetaConfigurationLoader implements MetaTemplateConstants {
 			} catch (IOException e) {
 				ModelUIPlugin.getPluginLog().logError(e);
 			} finally {
-				if (is != null) {
-					try {
-						is.close();
-					} catch (IOException e) {
-						// ignore
-					}
-				}
+				IOUtils.closeQuietly(is);
 				properties = new ResourceBundle() {
 					@Override
 					protected Object handleGetObject(String key) {

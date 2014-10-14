@@ -19,6 +19,7 @@ import java.io.Reader;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -179,13 +180,7 @@ public class ModelPlugin extends BaseUIPlugin implements IModelPlugin, IWindowLi
 		} catch (IOException x) {
 			throw new CoreException(new Status(IStatus.ERROR, ModelPlugin.PLUGIN_ID, IStatus.OK, "Failed to access or read underlying storage", x)); //$NON-NLS-1$
 		} finally {
-			try {
-				if (in != null)
-					in.close();
-				else
-					contentStream.close();
-			} catch (IOException ignored) {
-			}
+			IOUtils.closeQuietly(in);
 		}
 	}
 }

@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -176,7 +177,7 @@ public class StacksManager {
 				Parser p = new Parser();
 				return p.parse(fis);
 			} finally {
-				close(fis);
+				IOUtils.closeQuietly(fis);
 			}
 		}
 		return null;
@@ -254,7 +255,7 @@ public class StacksManager {
 		} catch (Exception e) {
 			StacksCoreActivator.pluginLog().logWarning("Can't read stacks url from the stacks-client.jar", e); //$NON-NLS-1$
 		} finally {
-			close(is);
+			IOUtils.closeQuietly(is);
 		}
 		return null;
 	}
@@ -277,18 +278,4 @@ public class StacksManager {
 		}
 		
 	}
-	
-	/*
-	 * Close an inputstream
-	 */
-	private static void close(InputStream is) {
-		if( is != null ) {
-			try {
-				is.close();
-			} catch(IOException ie) {
-				// IGNORE
-			}
-		}
-	}
-	
 }

@@ -11,6 +11,7 @@
 package org.jboss.tools.common.meta.impl;
 
 import org.xml.sax.ContentHandler;
+
 import java.io.*;
 import java.util.*;
 import java.net.*;
@@ -24,7 +25,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
-
+import org.apache.commons.io.IOUtils;
 import org.apache.xerces.xni.XMLResourceIdentifier;
 import org.apache.xerces.xni.XNIException;
 import org.apache.xerces.xni.parser.XMLInputSource;
@@ -114,13 +115,7 @@ public class MetaLibLoader {
 			ModelPlugin.getPluginLog().logError("MetaLoader: Cannot read resource " + url.toString()); //$NON-NLS-1$
 			return;
 		} finally {
-			if(stream2!=null) {
-				try {
-					stream2.close();
-				} catch (IOException e) {
-					// ignore
-				}
-			}
+			IOUtils.closeQuietly(stream2);
 		}
 		
 		if(validateMetaXML) {
@@ -138,13 +133,7 @@ public class MetaLibLoader {
 			} catch (IOException e) {
 				ModelPlugin.getPluginLog().logError(e);
 			}finally {
-				if(stream3!=null) {
-					try {
-						stream3.close();
-					} catch (IOException e) {
-						// ignore
-					}
-				}
+				IOUtils.closeQuietly(stream3);
 			}
 		}
 		

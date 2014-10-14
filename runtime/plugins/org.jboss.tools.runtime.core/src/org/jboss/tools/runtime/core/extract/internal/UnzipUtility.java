@@ -20,6 +20,7 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -121,20 +122,8 @@ public class UnzipUtility implements IExtractUtility {
 				out = new FileOutputStream(entryFile);
 				copy(in, out);
 			} finally {
-				if (in != null) {
-					try {
-						in.close();
-					} catch (Exception e) {
-						// ignore
-					}
-				}
-				if (out != null) {
-					try {
-						out.close();
-					} catch (Exception e) {
-						// ignore
-					}
-				}
+				IOUtils.closeQuietly(in);
+				IOUtils.closeQuietly(out);
 			}
 		}
 	}

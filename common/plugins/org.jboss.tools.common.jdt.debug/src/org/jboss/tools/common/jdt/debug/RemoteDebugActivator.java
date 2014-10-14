@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.internal.runtime.InternalPlatform;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.ILog;
@@ -303,18 +304,7 @@ public class RemoteDebugActivator implements BundleActivator, IPropertyChangeLis
 			logWarning(e);
 		} finally {
 			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e1) {
-					// ignore
-				}
-			}
-			if (is != null) {
-				try {
-					is.close();
-				} catch (IOException e1) {
-					// ignore
-				}
+				IOUtils.closeQuietly(reader);
 			}
 		}
 

@@ -23,6 +23,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -200,13 +201,7 @@ public class BundleModel {
 		} catch (IOException e) {
 			ModelUIPlugin.getPluginLog().logError(e);
 		} finally {
-			if(s!=null) {
-				try {
-					s.close();
-				} catch (IOException e) {
-					// ignore
-				}
-			}
+			IOUtils.closeQuietly(s);
 		}
 		String[][] r = new String[keys.size()][2];
 		for (int i = 0; i < r.length; i++) {

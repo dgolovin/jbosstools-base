@@ -408,9 +408,5 @@ class SharableComparator implements Comparator<SharableElement> {
         return (i == null) ? 1000 : i.intValue();
     }
 
-    public boolean equals(Object obj) {
-        return obj == this;
-    }
-
 }
 

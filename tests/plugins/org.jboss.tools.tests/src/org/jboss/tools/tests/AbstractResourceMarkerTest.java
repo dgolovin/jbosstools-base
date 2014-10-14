@@ -17,6 +17,7 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -85,13 +86,7 @@ public class AbstractResourceMarkerTest extends TestCase implements IAnnotationT
 			is = newContentFile.getContents();
 			originalFile.setContents(is, IFile.FORCE, null);
 		} finally {
-			if(is!=null) {
-				try {
-					is.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+			IOUtils.closeQuietly(is);
 		}
 		originalFile.getProject().build(IncrementalProjectBuilder.INCREMENTAL_BUILD, null);
 		JobUtils.waitForIdle();

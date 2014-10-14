@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 
 import javax.xml.parsers.DocumentBuilder;
 
+import org.apache.commons.io.IOUtils;
 import org.jboss.tools.common.xml.XMLUtilities;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -82,10 +83,7 @@ public class XMLUtilitiesTest extends TestCase {
 			assertNotNull(document);
 			return document;
 		} finally {
-			try {
-				in.close();
-			} catch (IOException e) {
-			}
+			IOUtils.closeQuietly(in);
 		}
 	}
 }

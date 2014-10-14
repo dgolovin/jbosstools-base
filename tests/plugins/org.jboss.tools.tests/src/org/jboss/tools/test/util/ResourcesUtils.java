@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -154,13 +155,12 @@ public class ResourcesUtils {
 	}
 	
 	public static boolean findLineInFile(IFile file, String pattern) throws CoreException, IOException {
-		InputStream content = null;
-		InputStreamReader isr = null;
+		LineNumberReader contentReader = null;
 		boolean patternIsFound = false;
 		try {
-			content = file.getContents(true);
-			isr = new InputStreamReader(content);
-			LineNumberReader contentReader = new LineNumberReader(isr);
+			InputStream content = file.getContents(true);
+			InputStreamReader isr = new InputStreamReader(content);
+			contentReader = new LineNumberReader(isr);
 			String line;
 			do {
 				line = contentReader.readLine();
@@ -170,20 +170,7 @@ public class ResourcesUtils {
 			} while (line != null && !patternIsFound);
 		}
 		finally {
-			if (isr != null) {
-				try {
-					isr.close();
-				} catch (IOException e) {
-					// ignore
-				}
-			}
-			if (content != null) {
-				try {
-					content.close();
-				} catch (IOException e) {
-					// ignore
-				}
-			}
+			IOUtils.closeQuietly(contentReader);
 		}
 		return patternIsFound;
 	}

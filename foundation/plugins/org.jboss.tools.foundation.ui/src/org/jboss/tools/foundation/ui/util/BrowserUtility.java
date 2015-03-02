@@ -195,7 +195,7 @@ public class BrowserUtility {
 	public static Control createBrowserOrLink(int style, Composite parent, int preferredBrowser, final String URL,
 					String noBrowserText) {
 		Control result = null;
-		Browser browser = createBrowser(style, parent, preferredBrowser);
+		Browser browser = null; // createBrowser(style, parent, preferredBrowser);
 		if (browser == null) {
 			//TODO: Implement loading for .txt files and showing them in 
 			// link as a text with visible hyperlink to open original address
@@ -217,8 +217,7 @@ public class BrowserUtility {
 
 														@Override
 														public void run() {
-															link.setText("Progress " + work);
-															
+															link.setText("Downloading license from <a></>" + work);
 														}
 														
 													});
@@ -277,13 +276,14 @@ public class BrowserUtility {
 							}
 											);
 						} catch (CoreException e) {
-
+							e.printStackTrace();
 						}
 
 						return null;
 					}
 			    };
-			    
+			    licenseDownloadJob.setSystem(true);
+			    licenseDownloadJob.schedule();
 			} else { 
 				link.setText(noBrowserText);
 				SelectionListener openExBrowser = new OpenExBrowserListener(URL);

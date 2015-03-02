@@ -59,7 +59,7 @@ public class DownloadRuntimeLicenseFragment extends WizardFragment {
 	private static final String DOWNLOAD_RUNTIME_SECTION = "downloadRuntimeSection"; //$NON-NLS-1$
 	private Button accept;
 	private Button decline;
-	private Browser browser;
+	private Control browser;
 	private DownloadRuntime dlrt;
 	private IDialogSettings downloadRuntimeSection;
 	private IWizardHandle handle;
@@ -106,8 +106,7 @@ public class DownloadRuntimeLicenseFragment extends WizardFragment {
 		wrap = new Composite(contents, SWT.BORDER);
 		wrap.setLayout(new GridLayout(1,  false));
 		
-		browser = null;
-		Control crl = BrowserUtility.createBrowserOrLink(SWT.READ_ONLY, wrap, BrowserUtility.getPreferredBrowser(),"", Messages.DownloadRuntimeLicenseFragment_Please_read_and_accept_the_license_agreement);
+		this.browser = BrowserUtility.createBrowserOrLink(SWT.READ_ONLY, wrap, BrowserUtility.getPreferredBrowser(),"", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		
 		gd = new GridData(SWT.FILL, SWT.FILL, true, true);
 		gd.heightHint = 150;
@@ -129,7 +128,7 @@ public class DownloadRuntimeLicenseFragment extends WizardFragment {
 //		    link.setMenu(popupMenu);
 //
 //		}
-		crl.setLayoutData(gd);
+		browser.setLayoutData(gd);
 		wrap.setLayoutData(gd);
 		
 		accept = new Button(contents, SWT.RADIO);
@@ -147,13 +146,13 @@ public class DownloadRuntimeLicenseFragment extends WizardFragment {
 
 	private void setDownloadRuntime(final DownloadRuntime downloadRuntime) {
 		if (downloadRuntime != null) {
-			if (browser != null && downloadRuntime.getLicenceURL() != null
+			if (browser instanceof Browser && downloadRuntime.getLicenceURL() != null
 					&& !downloadRuntime.getLicenceURL().isEmpty()) {
-				browser.setText("<html></html>"); //$NON-NLS-1$
-				browser.setUrl(downloadRuntime.getLicenceURL());
-			} else if(browser == null && downloadRuntime.getLicenceURL() != null
+				((Browser)browser).setText("<html></html>"); //$NON-NLS-1$
+				((Browser)browser).setUrl(downloadRuntime.getLicenceURL());
+			} else if(browser instanceof Link && downloadRuntime.getLicenceURL() != null
 					&& !downloadRuntime.getLicenceURL().isEmpty() ) {
-				
+				((Link)browser).setText(Messages.DownloadRuntimeLicenseFragment_Please_read_and_accept_the_license_agreement);
 			}
 			getPage().setTitle(NLS.bind(Messages.DownloadRuntimeLicensePage_Runtime, downloadRuntime.getName()));
 			boolean accepted = isAccepted(downloadRuntime);
